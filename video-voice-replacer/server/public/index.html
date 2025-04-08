@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Video Voice Replacer</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    video { max-width: 100%; margin-top: 20px; }
+    #output { margin-top: 20px; }
+    select, button, input { padding: 8px; margin: 10px; }
+  </style>
+</head>
+<body>
+  <h1>AI Video Voice Replacer</h1>
+
+  <input type="file" id="videoInput" accept="video/*"><br>
+
+  <label>Source Language:</label>
+  <select id="sourceLang">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="te">Telugu</option>
+    <!-- Add more -->
+  </select>
+
+  <label>Target Language:</label>
+  <select id="targetLang">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="te">Telugu</option>
+    <!-- Add more -->
+  </select>
+
+  <label>Voice:</label>
+  <select id="voiceSelect"></select>
+
+  <button onclick="generateVoice()">Generate & Replace Audio</button>
+
+  <div id="output">
+    <video id="videoPreview" controls></video>
+    <br>
+    <a id="downloadLink" style="display: none;" download="translated_video.mp4">Download Final Video</a>
+  </div>
+
+  <script>
+    let selectedVideo, voices = [];
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      voices = speechSynthesis.getVoices();
+      const voiceSelect = document.getElementById('voiceSelect');
+      voiceSelect.innerHTML = '';
+      voices.forEach((v, i) => {
+        voiceSelect.innerHTML += `<option value="${i}">${v.name} (${v.lang})</option>`;
+      });
+    };
+
+    document.getElementById('videoInput').addEventListener('change', (e) => {
+      selectedVideo = URL.createObjectURL(e.target.files[0]);
+      document.getElementById('videoPreview').src = selectedVideo;
+    });
+
+    async function generateVoice() {
+      if (!selectedVideo) {
+        alert("Please upload a video first.");
+        return;
+      }
+
+      const targetLang = document.getElementById('targetLang').value;
+      const voiceIndex = document.getElementById('voiceSelect').value;
+      const voice = voices[voiceIndex];
+
+      const utterance = new SpeechSynthesisUtterance("This is a test translation into " + targetLang);
+      utterance.voice = voice;
+
+      speechSynthesis.speak(utterance);
+
+      alert("Preview speech generated. Full audio replacement needs backend with ffmpeg.");
+    }
+  </script>
+</body>
+</html>

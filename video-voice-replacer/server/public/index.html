@@ -3,135 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Voice Translator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
-    }
-    h1 {
-      color: #333;
-    }
-    .container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 600px;
-      margin: auto;
-    }
-    label {
-      font-weight: bold;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    video {
-      width: 100%;
-      margin-top: 20px;
-      border-radius: 8px;
-    }
-    #downloadLink {
-      display: none;
-      margin-top: 10px;
-      color: #007bff;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  </style>
+  <title>AI Video Voice Translator</title>
 </head>
 <body>
-  <div class="container">
-    <h1>🎙️ AI Video Voice Translator</h1>
+  <h1>🎤 AI Voice Translator</h1>
 
-    <label for="videoInput">Upload a video</label>
-    <input type="file" id="videoInput" accept="video/*" onchange="previewVideo()" />
+  <input type="file" id="videoInput" accept="video/*" />
+  <br />
+  <label>Original Language:</label>
+  <select id="sourceLang">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="es">Spanish</option>
+    <option value="ta">Tamil</option>
+    <!-- Add more as needed -->
+  </select>
+  <br />
+  <label>Translate To:</label>
+  <select id="targetLang">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="es">Spanish</option>
+    <option value="ta">Tamil</option>
+    <!-- Add more as needed -->
+  </select>
+  <br />
+  <button onclick="generateVoice()">Generate Translated Video</button>
 
-    <label for="sourceLang">Source Language</label>
-    <select id="sourceLang">
-      <option value="en">English</option>
-      <option value="hi">Hindi</option>
-      <option value="ta">Tamil</option>
-      <option value="te">Telugu</option>
-      <option value="bn">Bengali</option>
-      <!-- Add more languages -->
-    </select>
-
-    <label for="targetLang">Target Language</label>
-    <select id="targetLang">
-      <option value="hi">Hindi</option>
-      <option value="en">English</option>
-      <option value="ta">Tamil</option>
-      <option value="te">Telugu</option>
-      <option value="bn">Bengali</option>
-      <!-- Add more languages -->
-    </select>
-
-    <button onclick="generateVoice()">🎧 Generate & Replace Audio</button>
-
-    <video id="videoPreview" controls></video>
-    <a id="downloadLink" download>⬇️ Download Final Video</a>
-  </div>
+  <div id="status"></div>
+  <video id="preview" controls style="display: none; margin-top: 20px;"></video>
 
   <script>
-    let selectedVideo = null;
-
-    function previewVideo() {
-      const file = document.getElementById('videoInput').files[0];
-      if (file) {
-        selectedVideo = file;
-        const videoPreview = document.getElementById('videoPreview');
-        videoPreview.src = URL.createObjectURL(file);
-        videoPreview.load();
-      }
-    }
+    const backendURL = "https://ai-voice-translator.onrender.com";
 
     async function generateVoice() {
-      if (!selectedVideo) {
+      const videoFile = document.getElementById("videoInput").files[0];
+      const sourceLang = document.getElementById("sourceLang").value;
+      const targetLang = document.getElementById("targetLang").value;
+
+      if (!videoFile) {
         alert("Please upload a video first.");
         return;
       }
 
-      const sourceLang = document.getElementById('sourceLang').value;
-      const targetLang = document.getElementById('targetLang').value;
-      const videoFile = document.getElementById('videoInput').files[0];
+      document.getElementById("status").innerText = "Uploading video...";
 
       const formData = new FormData();
-      formData.append('video', videoFile);
-      formData.append('sourceLang', sourceLang);
-      formData.append('targetLang', targetLang);
+      formData.append("video", videoFile);
+      formData.append("sourceLang", sourceLang);
+      formData.append("targetLang", targetLang);
 
       try {
-        const response = await fetch("https://ai-voice-translator.onrender.com/upload", {
+        const response = await fetch(`${backendURL}/upload`, {
           method: "POST",
-          body: formData
+          body: formData,
         });
+
+        if (!response.ok) throw new Error("Server error during upload.");
 
         const result = await response.json();
 
-        // Show the video preview and download
-        const finalVideoURL = `https://ai-voice-translator.onrender.com/${result.filePath}`;
-        document.getElementById('videoPreview').src = finalVideoURL;
-        const downloadLink = document.getElementById('downloadLink');
-        downloadLink.href = finalVideoURL;
-        downloadLink.style.display = "inline";
-      } catch (error) {
-        console.error("Error:", error);
-        alert("There was an error uploading or processing the video.");
+        if (result.videoUrl) {
+          document.getElementById("preview").src = result.videoUrl;
+          document.getElementById("preview").style.display = "block";
+          document.getElementById("status").innerText = "Translated video ready!";
+        } else {
+          throw new Error("Invalid response from server.");
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").innerText = "❌ Error: " + err.message;
       }
     }
   </script>

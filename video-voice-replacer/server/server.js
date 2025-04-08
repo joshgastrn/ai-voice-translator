@@ -1,23 +1,34 @@
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ✅ Enable CORS for all origins
 app.use(cors());
-app.use(express.static("public"));
+
+// Parse JSON (if needed)
 app.use(express.json());
 
-const upload = multer({ dest: "uploads/" });
+// Handle video uploads
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+const upload = multer({ storage });
 
 app.post("/upload", upload.single("video"), (req, res) => {
-  const file = req.file;
-  if (!file) return res.status(400).send("No file uploaded");
-  // Here you can process the file (audio extraction, TTS, merging etc.)
-  res.send({ message: "Video uploaded", filename: file.filename });
+  console.log("Received file:", req.file);
+
+  // For now, just simulate voice generation and return dummy audio URL
+  res.json({
+    message: "Video uploaded successfully!",
+    audioURL: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", // Placeholder
+  });
 });
 
 app.listen(port, () => {

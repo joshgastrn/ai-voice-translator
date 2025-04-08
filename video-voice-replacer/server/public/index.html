@@ -1,63 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Video Voice Replacer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Voice Translator</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    video { max-width: 100%; margin-top: 20px; }
-    #output { margin-top: 20px; }
-    select, button, input { padding: 8px; margin: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    video {
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 10px;
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <h1>AI Video Voice Replacer</h1>
+  <div class="container">
+    <h1>🎙️ AI Video Voice Translator</h1>
 
-  <input type="file" id="videoInput" accept="video/*"><br>
+    <label for="videoInput">Upload a video</label>
+    <input type="file" id="videoInput" accept="video/*" onchange="previewVideo()" />
 
-  <label>Source Language:</label>
-  <select id="sourceLang">
-    <option value="en">English</option>
-    <option value="hi">Hindi</option>
-    <option value="te">Telugu</option>
-    <!-- Add more -->
-  </select>
+    <label for="sourceLang">Source Language</label>
+    <select id="sourceLang">
+      <option value="en">English</option>
+      <option value="hi">Hindi</option>
+      <option value="ta">Tamil</option>
+      <option value="te">Telugu</option>
+      <option value="bn">Bengali</option>
+      <!-- Add more languages -->
+    </select>
 
-  <label>Target Language:</label>
-  <select id="targetLang">
-    <option value="en">English</option>
-    <option value="hi">Hindi</option>
-    <option value="te">Telugu</option>
-    <!-- Add more -->
-  </select>
+    <label for="targetLang">Target Language</label>
+    <select id="targetLang">
+      <option value="hi">Hindi</option>
+      <option value="en">English</option>
+      <option value="ta">Tamil</option>
+      <option value="te">Telugu</option>
+      <option value="bn">Bengali</option>
+      <!-- Add more languages -->
+    </select>
 
-  <label>Voice:</label>
-  <select id="voiceSelect"></select>
+    <button onclick="generateVoice()">🎧 Generate & Replace Audio</button>
 
-  <button onclick="generateVoice()">Generate & Replace Audio</button>
-
-  <div id="output">
     <video id="videoPreview" controls></video>
-    <br>
-    <a id="downloadLink" style="display: none;" download="translated_video.mp4">Download Final Video</a>
+    <a id="downloadLink" download>⬇️ Download Final Video</a>
   </div>
 
   <script>
-    let selectedVideo, voices = [];
+    let selectedVideo = null;
 
-    window.speechSynthesis.onvoiceschanged = () => {
-      voices = speechSynthesis.getVoices();
-      const voiceSelect = document.getElementById('voiceSelect');
-      voiceSelect.innerHTML = '';
-      voices.forEach((v, i) => {
-        voiceSelect.innerHTML += `<option value="${i}">${v.name} (${v.lang})</option>`;
-      });
-    };
-
-    document.getElementById('videoInput').addEventListener('change', (e) => {
-      selectedVideo = URL.createObjectURL(e.target.files[0]);
-      document.getElementById('videoPreview').src = selectedVideo;
-    });
+    function previewVideo() {
+      const file = document.getElementById('videoInput').files[0];
+      if (file) {
+        selectedVideo = file;
+        const videoPreview = document.getElementById('videoPreview');
+        videoPreview.src = URL.createObjectURL(file);
+        videoPreview.load();
+      }
+    }
 
     async function generateVoice() {
       if (!selectedVideo) {
@@ -65,16 +106,33 @@
         return;
       }
 
+      const sourceLang = document.getElementById('sourceLang').value;
       const targetLang = document.getElementById('targetLang').value;
-      const voiceIndex = document.getElementById('voiceSelect').value;
-      const voice = voices[voiceIndex];
+      const videoFile = document.getElementById('videoInput').files[0];
 
-      const utterance = new SpeechSynthesisUtterance("This is a test translation into " + targetLang);
-      utterance.voice = voice;
+      const formData = new FormData();
+      formData.append('video', videoFile);
+      formData.append('sourceLang', sourceLang);
+      formData.append('targetLang', targetLang);
 
-      speechSynthesis.speak(utterance);
+      try {
+        const response = await fetch("https://ai-voice-translator.onrender.com/upload", {
+          method: "POST",
+          body: formData
+        });
 
-      alert("Preview speech generated. Full audio replacement needs backend with ffmpeg.");
+        const result = await response.json();
+
+        // Show the video preview and download
+        const finalVideoURL = `https://ai-voice-translator.onrender.com/${result.filePath}`;
+        document.getElementById('videoPreview').src = finalVideoURL;
+        const downloadLink = document.getElementById('downloadLink');
+        downloadLink.href = finalVideoURL;
+        downloadLink.style.display = "inline";
+      } catch (error) {
+        console.error("Error:", error);
+        alert("There was an error uploading or processing the video.");
+      }
     }
   </script>
 </body>
